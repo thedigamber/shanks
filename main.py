@@ -19,6 +19,9 @@ intents.guilds = True
 
 bot = commands.Bot(command_prefix="!", intents=intents)
 
+# Remove default help command
+bot.remove_command("help")
+
 # ------------------ Auto message on guild join ------------------
 @bot.event
 async def on_guild_join(guild):
@@ -114,15 +117,6 @@ async def list_servers(ctx):
     await ctx.send(f"📋 **Servers you can nuke:**\n{formatted}\n\nSelect one below:")
     view = ServerSelectView(admin_guilds, ctx.author)
     await ctx.send("Choose a server:", view=view)
-
-@bot.command(name="help")
-async def help_command(ctx):
-    help_text = (
-        "**Shanks Bot Commands**\n"
-        "`!list` – Show all servers where you have Admin (dropdown to select).\n"
-        "`!help` – Show this message."
-    )
-    await ctx.send(help_text)
 
 # ------------------ Error handler ------------------
 @bot.event
