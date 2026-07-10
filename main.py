@@ -30,7 +30,8 @@ class HealthCheckHandler(BaseHTTPRequestHandler):
         self.send_response(200)
         self.send_header('Content-type', 'text/html')
         self.end_headers()
-        self.wfile.write(b"<html><body><h1>Shanks Bot is Running! 💀</h1></body></html>")
+        # Fixed: ASCII only, no emoji in bytes
+        self.wfile.write(b"<html><body><h1>Shanks Bot is Running!</h1></body></html>")
     
     def log_message(self, format, *args):
         return  # Suppress logs
@@ -209,6 +210,6 @@ async def on_command_error(ctx, error):
 
 # ------------------ Run bot ------------------
 if __name__ == "__main__":
-    print(f"🤖 Starting Shanks Bot...")
+    print("🤖 Starting Shanks Bot...")
     print(f"🌐 HTTP Server will run on port {PORT}")
     bot.run(TOKEN)
