@@ -1,7 +1,7 @@
+import os
 import discord
 from discord.ext import commands
 import asyncio
-import os
 
 def is_admin_in_guild(member: discord.Member) -> bool:
     return member.guild_permissions.administrator
