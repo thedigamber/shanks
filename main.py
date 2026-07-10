@@ -2,8 +2,8 @@ import os
 import asyncio
 import discord
 from discord.ext import commands
-from discord import ui
-from discord.ui import Select, View, SelectOption  # ✅ Sahi import
+from discord.ui import Select, View  # ✅ Sirf Select aur View
+from discord import SelectOption  # ✅ SelectOption alag se
 from dotenv import load_dotenv
 from utils import get_admin_guilds, format_guild_list
 from nuker import nuke_server
